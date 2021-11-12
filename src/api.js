@@ -8,6 +8,10 @@ const app = express()
 
 app.use(bodyParser.json())
 
+app.get('/healthz', async (req, res) => {
+  res.send('OK')
+})
+
 app.get('/todos', async (req, res) => {
   res.json(await todos.getAll())
 })

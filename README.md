@@ -8,6 +8,8 @@ The todo items are saved in the `data/todos.json` file.
 - Start the API with `npm start`
 - Run tests with `npm run test`
 
+You can check that the API is running by visiting http://localhost:3000/healthz.
+
 ### Environment variables
 
 <table>
@@ -36,6 +38,11 @@ The todo items are saved in the `data/todos.json` file.
     </tr>
   </thead>
   <tbody>
+    <tr>
+      <td><code>GET /healthz</code></td>
+      <td>Returns "OK" if the API is running</td>
+      <td><pre lang="bash">curl -XGET 'http://localhost:3000/healthz'</pre></td>
+    </tr>
     <tr>
       <td><code>GET /todos</code></td>
       <td>Fetch all todo items</td>
