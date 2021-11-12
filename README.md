@@ -4,6 +4,7 @@ Simple todo list API implemented in Node.js.
 
 The todo items are saved in the `data/todos.json` file.
 
+- Install dependencies with `npm install`
 - Start the API with `npm start`
 - Run tests with `npm run test`
 
