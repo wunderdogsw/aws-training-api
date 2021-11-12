@@ -50,7 +50,7 @@ The todo items are saved in the `data/todos.json` file.
       <td><code>POST /todos</code></td>
       <td>Create new todo item</td>
       <td>
-        <pre>curl -XPOST 'http://localhost:3000/todos' \
+        <pre lang="bash">curl -XPOST 'http://localhost:3000/todos' \
   --header 'Content-Type: application/json' \
   --data '{"content": "Hello world"}'</pre>
       </td>
@@ -59,7 +59,7 @@ The todo items are saved in the `data/todos.json` file.
       <td><code>PUT /todos/:id</code></td>
       <td>Update one todo item</td>
       <td>
-        <pre>curl -XPUT 'http://localhost:3000/todos/1' \
+        <pre lang="bash">curl -XPUT 'http://localhost:3000/todos/1' \
   --header 'Content-Type: application/json' \
   --data '{"content": "Hello world"}'</pre>
       </td>
