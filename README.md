@@ -15,7 +15,7 @@ The todo items are saved in the `data/todos.json` file.
 
 - Run tests with `npm run test`
 
-### Environment variables
+## Environment variables
 
 <table>
   <thead>
@@ -36,7 +36,7 @@ The todo items are saved in the `data/todos.json` file.
   </tbody>
 </table>
 
-### API documentation
+## API documentation
 
 <table>
   <thead>
