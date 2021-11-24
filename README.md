@@ -4,11 +4,16 @@ Simple todo list API implemented in Node.js.
 
 The todo items are saved in the `data/todos.json` file.
 
-- Install dependencies with `npm install`
-- Start the API with `npm start`
-- Run tests with `npm run test`
+## Getting started
 
-You can check that the API is running by visiting http://localhost:3000/healthz.
+1. Install dependencies with `npm install`
+2. Start the API with `npm start`
+3. Check that the API is running by visiting http://localhost:3000/healthz.
+4. Test out the API, see [API documentation](#api-documentation)
+
+## Running tests
+
+- Run tests with `npm run test`
 
 ### Environment variables
 
@@ -23,6 +28,10 @@ You can check that the API is running by visiting http://localhost:3000/healthz.
     <tr>
       <td><code>SECRET</code></td>
       <td>Used for checking if the user is allowed to use the <code>GET /stats</code> endpoint</td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_URL</code></td>
+      <td>Database URL for the <code>POST /increment</code> endpoint</td>
     </tr>
   </tbody>
 </table>
@@ -80,6 +89,11 @@ You can check that the API is running by visiting http://localhost:3000/healthz.
       <td><code>GET /stats</code></td>
       <td>Returns statistics of all todo items, requires secret</td>
       <td><pre lang="bash">curl -XGET 'http://localhost:3000/stats?secret=verysecret'</pre></td>
+    </tr>
+    <tr>
+      <td><code>POST /increment</code></td>
+      <td>Increments a counter, requires a PostgreSQL database</td>
+      <td><pre lang="bash">curl -XPOST 'http://localhost:3000/increment'</pre></td>
     </tr>
   </tbody>
 </table>

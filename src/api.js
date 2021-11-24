@@ -1,10 +1,13 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const todos = require('./todos')
+const { connectToDatabase, getClient } = require('./database')
 
 require('express-async-errors')
 
 const app = express()
+
+connectToDatabase()
 
 app.use(bodyParser.json())
 
@@ -48,6 +51,16 @@ app.get('/stats', async (req, res) => {
 
   res.json({
     count: await todos.count(),
+  })
+})
+
+app.post('/increment', async (req, res) => {
+  const client = getClient()
+
+  const result = await client.query('UPDATE counter SET value = value + 1 RETURNING *')
+
+  res.json({
+    value: result.rows[0].value
   })
 })
 
