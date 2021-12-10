@@ -5,7 +5,13 @@ let client = null
 module.exports = {
   async connectToDatabase() {
     try {
-      client = new Client({ connectionString: process.env.DATABASE_URL })
+      client = new Client({
+        host: process.env.DATABASE_HOST,
+        port: process.env.DATABASE_PORT,
+        user: process.env.DATABASE_USER,
+        password: process.env.DATABASE_PASSWORD,
+        database: process.env.DATABASE_NAME,
+      })
       await client.connect()
       await client.query('CREATE TABLE IF NOT EXISTS counter (value int)')
 
@@ -15,7 +21,7 @@ module.exports = {
         await client.query('INSERT INTO counter VALUES (0)')
       }
     } catch (e) {
-      console.warn('Database connection failed, the `/increment`-endpoint will not work')
+      console.warn('Database connection failed, the `/increment`-endpoint will not work:', e)
     }
   },
 
