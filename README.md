@@ -30,8 +30,24 @@ The todo items are saved in the `data/todos.json` file.
       <td>Used for checking if the user is allowed to use the <code>GET /stats</code> endpoint</td>
     </tr>
     <tr>
-      <td><code>DATABASE_URL</code></td>
-      <td>Database URL for the <code>POST /increment</code> endpoint</td>
+      <td><code>DATABASE_HOST</code></td>
+      <td>Database host for the <code>POST /increment</code> endpoint</td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_PORT</code></td>
+      <td>Database port for the <code>POST /increment</code> endpoint</td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_USER</code></td>
+      <td>Database user for the <code>POST /increment</code> endpoint</td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_PASSWORD</code></td>
+      <td>Database password for the <code>POST /increment</code> endpoint</td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_NAME</code></td>
+      <td>Database name for the <code>POST /increment</code> endpoint</td>
     </tr>
   </tbody>
 </table>
