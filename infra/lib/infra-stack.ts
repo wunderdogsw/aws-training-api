@@ -99,14 +99,6 @@ export class InfraStack extends Stack {
       path: '/healthz',
     })
 
-    // Grant access to secrets
-
-    if (!fargateService.taskDefinition.executionRole) {
-      throw new Error('Task definition execution role not set')
-    }
-
-    secretSecret.grantRead(fargateService.taskDefinition.executionRole)
-
     // Mount EFS volume
 
     fargateService.taskDefinition.addVolume(volume)
