@@ -5,7 +5,7 @@ import {
   aws_efs,
   aws_elasticloadbalancingv2,
   aws_rds,
-  aws_secretsmanager, CfnOutput,
+  aws_secretsmanager,
   Size,
   Stack,
   StackProps, Token
@@ -17,7 +17,6 @@ export class InfraStack extends Stack {
     super(scope, id, props)
 
     // Networking
-
     const vpc = aws_ec2.Vpc.fromLookup(this, 'VPC', { vpcId: 'vpc-06bc4ed157210e75b' })
     const privateSubnets = [
       aws_ec2.Subnet.fromSubnetId(this, 'PrivateSubnet1', 'subnet-05082bd1c01e608cf'),
@@ -29,15 +28,16 @@ export class InfraStack extends Stack {
     ]
 
     // Secrets
-
     const secretSecret = new aws_secretsmanager.Secret(this, 'Secret')
-    const databasePasswordSecret = new aws_secretsmanager.Secret(this, 'DatabasePassword')
+    const databasePasswordSecret = new aws_secretsmanager.Secret(
+      this,
+      'DatabasePassword',
+      { generateSecretString: { excludePunctuation: true } }
+    )
 
     // RDS
-
     const databaseUser = 'dbuser'
     const databaseName = 'api'
-
     const database = new aws_rds.DatabaseCluster(this, 'Database', {
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({ version: aws_rds.AuroraPostgresEngineVersion.VER_13_4 }),
       credentials: aws_rds.Credentials.fromPassword(databaseUser, databasePasswordSecret.secretValue),
@@ -51,14 +51,12 @@ export class InfraStack extends Stack {
     })
 
     // EFS
-
-    const fileSystem = new aws_efs.FileSystem(this, 'Filesystem', {
-      vpc: vpc,
+    const fileSystem = new aws_efs.FileSystem(this, 'FileSystem', {
+      vpc,
       performanceMode: aws_efs.PerformanceMode.GENERAL_PURPOSE,
       throughputMode: aws_efs.ThroughputMode.PROVISIONED,
       provisionedThroughputPerSecond: Size.mebibytes(10),
     })
-
     const volume: aws_ecs.Volume = {
       name: 'Volume',
       efsVolumeConfiguration: {
@@ -67,7 +65,6 @@ export class InfraStack extends Stack {
     }
 
     // ECS
-
     const fargateService = new aws_ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       vpc,
       taskImageOptions: {
@@ -94,13 +91,11 @@ export class InfraStack extends Stack {
         internetFacing: true,
       })
     })
-
     fargateService.targetGroup.configureHealthCheck({
       path: '/healthz',
     })
 
     // Mount EFS volume
-
     fargateService.taskDefinition.addVolume(volume)
     fargateService.taskDefinition.defaultContainer?.addMountPoints({
       containerPath: '/app/data',
@@ -109,18 +104,11 @@ export class InfraStack extends Stack {
     })
 
     // Allow connections between ECS tasks <-> EFS filesystem
-
     fargateService.service.connections.allowFrom(fileSystem, aws_ec2.Port.tcp(2049))
     fargateService.service.connections.allowTo(fileSystem, aws_ec2.Port.tcp(2049))
 
     // Allow connections between ECS tasks <-> RDS database
-
     fargateService.service.connections.allowFrom(database, aws_ec2.Port.tcp(5432))
     fargateService.service.connections.allowTo(database, aws_ec2.Port.tcp(5432))
-
-    // Outputs
-
-    new CfnOutput(this, 'EcsClusterName', { value: fargateService.cluster.clusterName })
-    new CfnOutput(this, 'EcsServiceName', { value: fargateService.service.serviceName })
   }
 }
