@@ -6,6 +6,7 @@ import {
   aws_elasticloadbalancingv2,
   aws_rds,
   aws_secretsmanager,
+  RemovalPolicy,
   Size,
   Stack,
   StackProps, Token
@@ -56,6 +57,7 @@ export class InfraStack extends Stack {
       performanceMode: aws_efs.PerformanceMode.GENERAL_PURPOSE,
       throughputMode: aws_efs.ThroughputMode.PROVISIONED,
       provisionedThroughputPerSecond: Size.mebibytes(10),
+      removalPolicy: RemovalPolicy.DESTROY,
     })
     const volume: aws_ecs.Volume = {
       name: 'Volume',
