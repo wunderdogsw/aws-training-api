@@ -17,6 +17,13 @@ jest.mock('fs', () => ({
   },
 }))
 
+jest.mock('pg', () => ({
+  Client: jest.fn(() => ({
+    connect: jest.fn(() => Promise.resolve()),
+    query: jest.fn(() => Promise.resolve({ rows: [] })),
+  }))
+}))
+
 describe('GET /todos', () => {
   it('fetches all todo items', async () => {
     await request(app)
