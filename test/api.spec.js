@@ -68,3 +68,11 @@ describe('DELETE /todos:id', () => {
       .expect(200)
   })
 })
+
+describe('GET /cool-new-endpoint', () => {
+  it('is cool', async () => {
+    await request(app)
+      .get('/cool-new-endpoint')
+      .expect(200)
+  })
+})
