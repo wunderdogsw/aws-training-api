@@ -1,4 +1,4 @@
-FROM node:16
+FROM public.ecr.aws/docker/library/node:16
 
 ENV NODE_ENV production
 WORKDIR /app
