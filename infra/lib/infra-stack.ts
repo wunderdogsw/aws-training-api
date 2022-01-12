@@ -1,5 +1,9 @@
 import {
+  aws_codebuild,
+  aws_codepipeline,
+  aws_codepipeline_actions,
   aws_ec2,
+  aws_ecr,
   aws_ecs,
   aws_ecs_patterns,
   aws_efs,
@@ -66,6 +70,11 @@ export class InfraStack extends Stack {
       },
     }
 
+    // ECR
+    const containerRegistry = new aws_ecr.Repository(this, 'ContainerRegistry', {
+      removalPolicy: RemovalPolicy.DESTROY
+    })
+
     // ECS
     const fargateService = new aws_ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       vpc,
@@ -112,5 +121,78 @@ export class InfraStack extends Stack {
     // Allow connections between ECS tasks <-> RDS database
     fargateService.service.connections.allowFrom(database, aws_ec2.Port.tcp(5432))
     fargateService.service.connections.allowTo(database, aws_ec2.Port.tcp(5432))
+
+    // CodeBuild
+    const buildProject = new aws_codebuild.PipelineProject(this, 'BuildProject', {
+      buildSpec: aws_codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+      environment: {
+        privileged: true,
+      },
+      environmentVariables: {
+        REPOSITORY_URI: {
+          value: containerRegistry.repositoryUri
+        }
+      }
+    })
+
+    // CodePipeline
+    const sourceArtifact = new aws_codepipeline.Artifact()
+    const imageDefinitionArtifact = new aws_codepipeline.Artifact()
+    new aws_codepipeline.Pipeline(
+      this,
+      'Pipeline',
+      {
+        crossAccountKeys: false,
+        stages: [
+          // 1. Pull source from GitHub
+          {
+            stageName: 'Source',
+            actions: [
+              new aws_codepipeline_actions.CodeStarConnectionsSourceAction({
+                actionName: 'Source',
+                connectionArn: 'arn:aws:codestar-connections:eu-west-1:571964155577:connection/5f1df821-227e-4a47-814c-965e8ca38942',
+                owner: 'kankje',
+                repo: 'aws-training-api',
+                branch: 'production',
+                output: sourceArtifact
+              })
+            ]
+          },
+
+          // 2. Build and push Docker image to ECR
+          {
+            stageName: 'Build',
+            actions: [
+              new aws_codepipeline_actions.CodeBuildAction({
+                actionName: 'Build',
+                input: sourceArtifact,
+                project: buildProject,
+                outputs: [imageDefinitionArtifact],
+              })
+            ]
+          },
+
+          // 3. Deploy image to ECS
+          {
+            stageName: 'Deploy',
+            actions: [
+              new aws_codepipeline_actions.EcsDeployAction({
+                actionName: 'Deploy',
+                input: imageDefinitionArtifact,
+                service: fargateService.service
+              })
+            ]
+          }
+        ]
+      }
+    )
+
+    // Allow CodeBuild to read and write images to the ECR registry.
+    aws_ecr.AuthorizationToken.grantRead(buildProject)
+    containerRegistry.grantPullPush(buildProject)
+
+    // Allow ECS to read images from the ECR registry.
+    aws_ecr.AuthorizationToken.grantRead(fargateService.service.taskDefinition.executionRole!)
+    containerRegistry.grantPull(fargateService.service.taskDefinition.executionRole!)
   }
 }
