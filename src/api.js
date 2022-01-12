@@ -64,4 +64,8 @@ app.post('/increment', async (req, res) => {
   })
 })
 
+app.get('/cool-new-endpoint', (req, res) => {
+  res.send('Hello world!')
+})
+
 module.exports = app
