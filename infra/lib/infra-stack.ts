@@ -1,4 +1,5 @@
 import {
+  aws_cloudwatch_actions,
   aws_codebuild,
   aws_codepipeline,
   aws_codepipeline_actions,
@@ -8,18 +9,29 @@ import {
   aws_ecs_patterns,
   aws_efs,
   aws_elasticloadbalancingv2,
+  aws_logs,
   aws_rds,
   aws_secretsmanager,
+  aws_sns,
+  aws_sns_subscriptions,
+  Duration,
   RemovalPolicy,
   Size,
   Stack,
-  StackProps, Token
+  StackProps,
+  Tags,
+  Token
 } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 
 export class InfraStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props)
+
+    // Tags
+    Tags.of(this).add('Cost Center', 'YOUR_NAME_HERE')
+    Tags.of(this).add('Application', 'aws-training-api')
+    Tags.of(this).add('Environment', 'production')
 
     // Networking
     const vpc = aws_ec2.Vpc.fromLookup(this, 'VPC', { vpcId: 'vpc-06bc4ed157210e75b' })
@@ -76,6 +88,7 @@ export class InfraStack extends Stack {
     })
 
     // ECS
+    var fargateLogGroup = new aws_logs.LogGroup(this, 'FargateLogs')
     const fargateService = new aws_ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       vpc,
       taskImageOptions: {
@@ -91,6 +104,10 @@ export class InfraStack extends Stack {
           SECRET: aws_ecs.Secret.fromSecretsManager(secretSecret),
           DATABASE_PASSWORD: aws_ecs.Secret.fromSecretsManager(databasePasswordSecret),
         },
+        logDriver: aws_ecs.LogDriver.awsLogs({
+          streamPrefix: 'logs',
+          logGroup: fargateLogGroup
+        })
       },
       cpu: 256,
       memoryLimitMiB: 512,
@@ -111,7 +128,7 @@ export class InfraStack extends Stack {
     fargateService.taskDefinition.defaultContainer?.addMountPoints({
       containerPath: '/app/data',
       sourceVolume: volume.name,
-      readOnly: false,
+      readOnly: false
     })
 
     // Allow connections between ECS tasks <-> EFS filesystem
@@ -167,7 +184,7 @@ export class InfraStack extends Stack {
                 actionName: 'Build',
                 input: sourceArtifact,
                 project: buildProject,
-                outputs: [imageDefinitionArtifact],
+                outputs: [imageDefinitionArtifact]
               })
             ]
           },
@@ -176,6 +193,9 @@ export class InfraStack extends Stack {
           {
             stageName: 'Deploy',
             actions: [
+              new aws_codepipeline_actions.ManualApprovalAction({
+                actionName: 'Approve',
+              }),
               new aws_codepipeline_actions.EcsDeployAction({
                 actionName: 'Deploy',
                 input: imageDefinitionArtifact,
@@ -187,12 +207,35 @@ export class InfraStack extends Stack {
       }
     )
 
-    // Allow CodeBuild to read and write images to the ECR registry.
+    // Allow CodeBuild to read and write images to the ECR registry
     aws_ecr.AuthorizationToken.grantRead(buildProject)
     containerRegistry.grantPullPush(buildProject)
 
-    // Allow ECS to read images from the ECR registry.
+    // Allow ECS to read images from the ECR registry
     aws_ecr.AuthorizationToken.grantRead(fargateService.service.taskDefinition.executionRole!)
     containerRegistry.grantPull(fargateService.service.taskDefinition.executionRole!)
+
+    // CloudWatch alarm for all logged messages containing "Error"
+    const errorFilter = new aws_logs.MetricFilter(this, 'ErrorFilter', {
+      logGroup: fargateLogGroup,
+      metricNamespace: `${this.stackName}Metrics`,
+      metricName: 'Errors',
+      filterPattern: aws_logs.FilterPattern.anyTerm('Error')
+    })
+    const errorAlarm = errorFilter
+      .metric({ period: Duration.seconds(30), statistic: 'Sum' })
+      .createAlarm(this, 'Alarm', {
+        threshold: 1,
+        evaluationPeriods: 1,
+      })
+
+    // SNS topic for alarm notifications
+    const alarmTopic = new aws_sns.Topic(this, 'AlarmTopic')
+    alarmTopic.addSubscription(
+      new aws_sns_subscriptions.EmailSubscription('YOUR_EMAIL_HERE')
+    )
+    errorAlarm.addAlarmAction(
+      new aws_cloudwatch_actions.SnsAction(alarmTopic)
+    )
   }
 }
